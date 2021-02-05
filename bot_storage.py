@@ -158,21 +158,21 @@ def full_storage(message):
         all_order = types.InlineKeyboardMarkup(row_width=3)
         full_storage = 'Стикеры\n\n'
         for el in storage:  # (1, 'Рандом 1', 3, 0)
-            full_storage += f'{el[0]}. "{el[1]}" - {el[2]}'
+            full_storage += f'{el[0]:02}. "{el[1]}" - {el[2]}'
             full_storage += '\n'
 
         cursor.execute(f"select * from posters_all")
         storage = cursor.fetchall()
         full_storage += '\nПостеры\n\n'
         for el in storage:  # (1, 'Рандом 1', 3, 0)
-            full_storage += f'{el[0]}. "{el[1]}" - {el[2]}'
+            full_storage += f'{el[0]:02}. "{el[1]}" - {el[2]}'
             full_storage += '\n'
 
         cursor.execute(f"select * from lamps_all")
         storage = cursor.fetchall()
         full_storage += '\nЛампы\n\n'
         for el in storage:  # (1, 'Рандом 1', 3, 0)
-            full_storage += f'{el[0]}. "{el[1]}" - {el[2]}'
+            full_storage += f'{el[0]:02}. "{el[1]}" - {el[2]}'
             full_storage += '\n'
         bot.send_message(message.chat.id, full_storage, reply_markup=all_order)
     except Error as e:
