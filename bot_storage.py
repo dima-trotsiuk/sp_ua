@@ -5,7 +5,7 @@ import telebot
 from telebot import types
 from loguru import logger
 
-#что-то поменял
+
 
 
 bot = telebot.TeleBot('1477439147:AAGFkVgkny6xw7T9zPbZjvIbavnJLnpofF4', parse_mode=None)
