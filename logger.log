@@ -1,0 +1,105 @@
+2021-02-07T17:45:31.108473+0300 | ERROR | Помилка в connection_func: 2003: Can't connect to MySQL server on 'locralhost:3306' (11001 getaddrinfo failed)
+2021-02-07T17:46:03.282550+0300 | ERROR | An error has been caught in function 'welcome', process 'MainProcess' (1624), thread 'WorkerThread2' (15616):
+Traceback (most recent call last):
+
+  File "C:\Users\38063\AppData\Local\Programs\Python\Python39\lib\site-packages\mysql\connector\network.py", line 580, in open_connection
+    addrinfos = socket.getaddrinfo(self.server_host,
+                |      |           |    -> 'locralhost'
+                |      |           -> <mysql.connector.network.MySQLTCPSocket object at 0x0000020BCA1D8BE0>
+                |      -> <function getaddrinfo at 0x0000020BC774FF70>
+                -> <module 'socket' from 'C:\\Users\\38063\\AppData\\Local\\Programs\\Python\\Python39\\lib\\socket.py'>
+
+  File "C:\Users\38063\AppData\Local\Programs\Python\Python39\lib\socket.py", line 953, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               |       |           |     |     |       |     |      -> 0
+               |       |           |     |     |       |     -> 6
+               |       |           |     |     |       -> <SocketKind.SOCK_STREAM: 1>
+               |       |           |     |     -> 0
+               |       |           |     -> 3306
+               |       |           -> 'locralhost'
+               |       -> <built-in function getaddrinfo>
+               -> <module '_socket' from 'C:\\Users\\38063\\AppData\\Local\\Programs\\Python\\Python39\\DLLs\\_socket.pyd'>
+
+socket.gaierror: [Errno 11001] getaddrinfo failed
+
+
+During handling of the above exception, another exception occurred:
+
+
+Traceback (most recent call last):
+
+  File "C:\Users\38063\AppData\Local\Programs\Python\Python39\lib\threading.py", line 912, in _bootstrap
+    self._bootstrap_inner()
+    |    -> <function Thread._bootstrap_inner at 0x0000020BC76EE790>
+    -> <WorkerThread(WorkerThread2, started daemon 15616)>
+
+  File "C:\Users\38063\AppData\Local\Programs\Python\Python39\lib\threading.py", line 954, in _bootstrap_inner
+    self.run()
+    |    -> <function WorkerThread.run at 0x0000020BC9D929D0>
+    -> <WorkerThread(WorkerThread2, started daemon 15616)>
+
+  File "C:\Users\38063\AppData\Local\Programs\Python\Python39\lib\site-packages\telebot\util.py", line 69, in run
+    task(*args, **kwargs)
+    |     |       -> {}
+    |     -> (<telebot.types.Message object at 0x0000020BCA1C5790>,)
+    -> <function welcome at 0x0000020BCA1BD160>
+
+> File "D:\Programming\python\sp_ua\sp_ua\bot_storage.py", line 102, in welcome
+    conn = connection_func()
+           -> <function connection_func at 0x0000020BCA1A7CA0>
+
+  File "D:\Programming\python\sp_ua\sp_ua\bot_storage.py", line 33, in connection_func
+    conn = mysql.connector.connect(host='locralhost',
+           |     |         -> <function connect at 0x0000020BC914D430>
+           |     -> <module 'mysql.connector' from 'C:\\Users\\38063\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\mysql\\conn...
+           -> <module 'mysql' from 'C:\\Users\\38063\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\mysql\\__init__.py'>
+
+  File "C:\Users\38063\AppData\Local\Programs\Python\Python39\lib\site-packages\mysql\connector\__init__.py", line 278, in connect
+    return MySQLConnection(*args, **kwargs)
+           |                |       -> {'host': 'locralhost', 'database': 'sp_ua_test', 'user': 'root', 'password': 'admin'}
+           |                -> ()
+           -> <class 'mysql.connector.connection.MySQLConnection'>
+
+  File "C:\Users\38063\AppData\Local\Programs\Python\Python39\lib\site-packages\mysql\connector\connection.py", line 108, in __init__
+    self.connect(**kwargs)
+    |    |         -> {'host': 'locralhost', 'database': 'sp_ua_test', 'user': 'root', 'password': 'admin'}
+    |    -> <function MySQLConnectionAbstract.connect at 0x0000020BC9121EE0>
+    -> <mysql.connector.connection.MySQLConnection object at 0x0000020BCA1D8C70>
+
+  File "C:\Users\38063\AppData\Local\Programs\Python\Python39\lib\site-packages\mysql\connector\abstracts.py", line 1003, in connect
+    self._open_connection()
+    |    -> <function MySQLConnection._open_connection at 0x0000020BC914C550>
+    -> <mysql.connector.connection.MySQLConnection object at 0x0000020BCA1D8C70>
+
+  File "C:\Users\38063\AppData\Local\Programs\Python\Python39\lib\site-packages\mysql\connector\connection.py", line 351, in _open_connection
+    self._socket.open_connection()
+    |    -> None
+    -> <mysql.connector.connection.MySQLConnection object at 0x0000020BCA1D8C70>
+
+  File "C:\Users\38063\AppData\Local\Programs\Python\Python39\lib\site-packages\mysql\connector\network.py", line 598, in open_connection
+    raise errors.InterfaceError(
+          |      -> <class 'mysql.connector.errors.InterfaceError'>
+          -> <module 'mysql.connector.errors' from 'C:\\Users\\38063\\AppData\\Local\\Programs\\Python\\Python39\\lib\\site-packages\\mysq...
+
+mysql.connector.errors.InterfaceError: 2003: Can't connect to MySQL server on 'locralhost:3306' (11001 getaddrinfo failed)
+2021-02-07T17:47:20.339539+0300 | ERROR | Помилка в connection_func: 2003: Can't connect to MySQL server on 'locralhost:3306' (11001 getaddrinfo failed)
+2021-02-07T17:55:47.407562+0300 | ERROR | Помилка в connection_func: 2003: Can't connect to MySQL server on 'locralhost:3306' (11001 getaddrinfo failed)
+2021-02-07T17:58:37.660872+0300 | DEBUG | ['Склад Дімона']
+2021-02-07T17:58:58.352974+0300 | DEBUG | ['Склад', 'Дімона']
+2021-02-07T18:00:25.321621+0300 | DEBUG | ['Склад', 'Дімона']
+2021-02-07T18:01:46.769535+0300 | DEBUG | ['Склад', 'Дімона']
+2021-02-07T18:01:49.564595+0300 | DEBUG | ['Склад', 'Владоса']
+2021-02-07T18:41:34.095636+0300 | DEBUG | ['category', 'stickers']
+2021-02-07T19:20:33.630503+0300 | DEBUG | lamps_dima
+2021-02-07T19:20:33.630503+0300 | DEBUG | 1
+2021-02-07T19:20:33.630503+0300 | DEBUG | ('Милый во франксе',)
+2021-02-07T19:20:33.631501+0300 | DEBUG | stickers_dima
+2021-02-07T19:20:33.631501+0300 | DEBUG | 31
+2021-02-07T19:20:33.631501+0300 | DEBUG | ('Хуй',)
+2021-02-07T19:20:33.731445+0300 | DEBUG | stickers_dima
+2021-02-07T19:20:33.731445+0300 | DEBUG | 31
+2021-02-07T19:20:33.731445+0300 | DEBUG | ('Хуй',)
+2021-02-07T19:20:33.732445+0300 | DEBUG | lamps_dima
+2021-02-07T19:20:33.732445+0300 | DEBUG | 2
+2021-02-07T19:20:33.732445+0300 | DEBUG | ('Итачи',)
+2021-02-07T19:23:06.702501+0300 | DEBUG | Ведмідь
