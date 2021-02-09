@@ -103,7 +103,8 @@ def welcome(message):
     item3 = types.KeyboardButton("Редагувати склад")
     item4 = types.KeyboardButton("Full склад")
     item5 = types.KeyboardButton("Управління замовленнями")
-    keyboard_schedule.add(item1, item2, item3, item4, item5)
+    item6 = types.KeyboardButton("Пошук по ТТН")
+    keyboard_schedule.add(item1, item2, item3, item4, item5, item6)
 
     conn = connection_func()
     query = f"select id from admins where id = {message.from_user.id}"
@@ -1255,9 +1256,73 @@ def send_orders(call):
     bot.send_message(call.message.chat.id, "Всі замовлення були відправлені🥰")
 
 
+@bot.callback_query_handler(func=lambda call: "close" in call.data)
+def close_call(call):
+    spam_check(call)
+
+
 # Конец
 '''
 Управління замовленнями
+'''
+# Конец
+
+# Начало
+'''
+Пошук по ттн
+'''
+# Начало
+
+
+@bot.message_handler(func=lambda message: message.text == 'Пошук по ТТН')
+def search_by_ttn(message):
+    sent = bot.send_message(message.chat.id, "ТТНчік?")
+    bot.register_next_step_handler(sent, search_by_ttn_handler)
+
+
+def search_by_ttn_handler(message):
+    ttn = message.text
+    conn = connection_func()
+    cursor = conn.cursor()
+
+    send = ''
+    cursor.execute(f"select admin_name, id, platform, price, date from orders where ttn = {ttn}")
+
+    info = cursor.fetchone()  # ('vlad', 950, 'instagram', 60)
+
+    admin_name = info[0]
+    id = info[1]
+    platform = info[2]
+    price = info[3]
+    date = info[4]
+    send += f"{date}\n"
+    send += f"Замовлення №{id} ({platform})\nТТН: {ttn}\n"
+
+    cursor.execute(
+        f"select category_id, product_id, quantity from order_products where order_id = {id}")
+    info = cursor.fetchall()  # (category_id = 1, product_id = 23, quantity = 25)
+    for i in info:
+        category_id = i[0]
+        product_id = i[1]
+        quantity = i[2]
+
+        cursor.execute(f"select title from categories where id = {category_id}")
+        category = cursor.fetchone()
+
+        categories = category[0]
+
+        cursor.execute(f"select name from {categories}_{admin_name} where id = {product_id}")
+        title = cursor.fetchone()
+        logger.debug(title)
+        title = title[0]
+
+        send += f"{quantity} {title} ({categories})\n"
+    send += f"= {price} грн\nЗапакував: {admin_name}"
+    bot.send_message(message.chat.id, send)
+
+# Конец
+'''
+Пошук по ттн
 '''
 # Конец
 
@@ -1266,8 +1331,6 @@ def send_orders(call):
 '''
 Другие команды
 '''
-
-
 # Начало
 
 
@@ -1278,16 +1341,12 @@ def store(message):
 
 # Конец
 '''
-Управління замовленнями
+Другие команды
 '''
-
-
 # Конец
 
 
-@bot.callback_query_handler(func=lambda call: "close" in call.data)
-def close_call(call):
-    spam_check(call)
+
 
 
 bot.polling(none_stop=True)
