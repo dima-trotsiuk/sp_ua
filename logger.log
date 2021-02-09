@@ -125,3 +125,29 @@ mysql.connector.errors.InterfaceError: 2003: Can't connect to MySQL server on 'l
 2021-02-09T19:39:58.192146+0300 | DEBUG | ('vlad', 950, 'instagram', 60, datetime.datetime(2021, 2, 3, 11, 14, 32))
 2021-02-09T19:39:58.201807+0300 | DEBUG | 2021-02-03 11:14:32
 2021-02-09T19:39:58.203804+0300 | DEBUG | ('Программирование',)
+2021-02-09T19:58:52.766399+0300 | DEBUG | ('dima', 957, 'instagram', None, datetime.datetime(2021, 2, 5, 11, 42, 44))
+2021-02-09T19:59:10.670144+0300 | DEBUG | ('dima', 957, 'instagram', None, datetime.datetime(2021, 2, 5, 11, 42, 44))
+2021-02-09T19:59:23.012170+0300 | DEBUG | None
+2021-02-09T20:03:50.659428+0300 | DEBUG | ('dima', 957, 'instagram', None, datetime.datetime(2021, 2, 5, 11, 42, 44))
+2021-02-09T20:05:52.732126+0300 | DEBUG | ('dima', 957, 'instagram', None, datetime.datetime(2021, 2, 5, 11, 42, 44))
+2021-02-09T20:06:53.448251+0300 | DEBUG | 000
+2021-02-09T20:06:53.484146+0300 | DEBUG | ('dima', 957, 'instagram', None, datetime.datetime(2021, 2, 5, 11, 42, 44))
+2021-02-09T20:08:03.140277+0300 | DEBUG | 0
+2021-02-09T20:08:03.155370+0300 | DEBUG | ('dima', 957, 'instagram', None, datetime.datetime(2021, 2, 5, 11, 42, 44))
+2021-02-09T20:10:37.673643+0300 | DEBUG | 1
+2021-02-09T20:10:37.689603+0300 | DEBUG | None
+2021-02-09T20:10:43.108937+0300 | DEBUG | 1
+2021-02-09T20:10:43.122900+0300 | DEBUG | None
+2021-02-09T20:10:46.137141+0300 | DEBUG | 0
+2021-02-09T20:10:46.153123+0300 | DEBUG | ('dima', 957, 'instagram', None, datetime.datetime(2021, 2, 5, 11, 42, 44))
+2021-02-09T20:12:08.164110+0300 | DEBUG | 0
+2021-02-09T20:12:08.179069+0300 | DEBUG | ('dima', 957, 'instagram', None, datetime.datetime(2021, 2, 5, 11, 42, 44))
+2021-02-09T20:12:08.179069+0300 | ERROR | Помилка в search_by_ttn_handler: Unread result found
+2021-02-09T20:15:14.714345+0300 | DEBUG | 0
+2021-02-09T20:15:14.733368+0300 | DEBUG | ('dima', 957, 'instagram', None, datetime.datetime(2021, 2, 5, 11, 42, 44))
+2021-02-09T20:15:14.734367+0300 | DEBUG | ('Кіберпанк',)
+2021-02-09T20:15:24.270437+0300 | DEBUG | 000
+2021-02-09T20:15:24.284400+0300 | DEBUG | ('dima', 957, 'instagram', None, datetime.datetime(2021, 2, 5, 11, 42, 44))
+2021-02-09T20:15:24.285397+0300 | DEBUG | ('Кіберпанк',)
+2021-02-09T20:15:35.653189+0300 | DEBUG | 1
+2021-02-09T20:15:35.667151+0300 | DEBUG | None
