@@ -172,7 +172,7 @@ def print_storage(storage, cat):
         full_storage = ''
         if cat == 'stickers':
             for el in storage:
-                full_storage += f'{el[0]}. "{el[1]}" - '
+                full_storage += f'{el[0]:02}. "{el[1]}" - '
                 if el[2] == 0:
                     full_storage += f'0'
                 else:
@@ -184,7 +184,7 @@ def print_storage(storage, cat):
             return full_storage
         else:
             for el in storage:
-                full_storage += f'{el[0]}. "{el[1]}" - {el[2]}\n'
+                full_storage += f'{el[0]:02}. "{el[1]}" - {el[2]}\n'
             return full_storage
     except Error as e:
         logger.error(f"Помилка в print_storage: {e}")
@@ -672,7 +672,8 @@ def menu_orders(message):
     add_order = types.InlineKeyboardButton("Додати", callback_data="add_order")
     view_orders = types.InlineKeyboardButton("Перегланути", callback_data="view_orders")
     send_orders = types.InlineKeyboardButton("Відправити", callback_data="send_orders")
-    menu_orders_keyboard.add(add_order, view_orders, send_orders)
+    delete_order = types.InlineKeyboardButton("Видалити", callback_data="delete_order")
+    menu_orders_keyboard.add(add_order, view_orders, send_orders, delete_order)
     bot.send_message(message.chat.id, 'Меню управління замовленнями:', reply_markup=menu_orders_keyboard)
 
 
@@ -684,6 +685,8 @@ def menu_orders_call(call):
         view_orders(call)
     elif call.data == "send_orders":
         send_orders(call)
+    elif call.data == "delete_order":
+        delete_order(call)
     spam_check(call)
 
 
@@ -1261,6 +1264,39 @@ def close_call(call):
     spam_check(call)
 
 
+'''delete_order'''
+
+
+def delete_order(call):
+    sent = bot.send_message(call.message.chat.id, f"Номер замовлення?")
+    bot.register_next_step_handler(sent, delete_order_by_number)
+
+
+def delete_order_by_number(message):
+    id_order = message.text
+
+    conn = connection_func()
+    cursor = conn.cursor()
+
+    if not id_order.isdigit():
+        bot.send_message(message.chat.id, "Незрозуміле число🤓")
+    else:
+        try:
+            cursor.execute(f"delete from order_products where order_id = {id_order};")
+            conn.commit()
+
+            cursor.execute(f"delete from orders where id = {id_order};")
+            conn.commit()
+
+            bot.send_message(message.chat.id, f"Готово👌")
+        except Error as e:
+            logger.error(f"Помилка в delete_order_by_number: {e}")
+            bot.send_message(message.chat.id, "Помилка😇")
+        finally:
+            conn.close()
+            cursor.close()
+
+
 # Конец
 '''
 Управління замовленнями
@@ -1288,7 +1324,7 @@ def search_by_ttn_handler(message):
     cursor = conn.cursor(buffered=True)
 
     send = ''
-    cursor.execute(f"select admin_name, id, platform, price, date from orders where ttn = {ttn}")
+    cursor.execute(f"select admin_name, id, platform, price, date from orders where ttn = '{ttn}'")
 
     info = cursor.fetchone()  # ('dima', 957, 'instagram', 100, datetime.datetime(2021, 2, 5, 11, 42, 44))
     if not info:
@@ -1329,7 +1365,6 @@ def search_by_ttn_handler(message):
 
     conn.close()
     cursor.close()
-
 
 
 # Конец
