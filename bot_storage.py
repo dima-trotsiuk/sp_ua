@@ -3,6 +3,10 @@ from mysql.connector import Error
 import telebot
 from telebot import types
 from loguru import logger
+from pylab import rcParams
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
 bot = telebot.TeleBot('1477439147:AAGFkVgkny6xw7T9zPbZjvIbavnJLnpofF4', parse_mode=None)
 logger.add("logger.log", format="{time} | {level} | {message}",
@@ -104,7 +108,8 @@ def welcome(message):
     item4 = types.KeyboardButton("Full склад")
     item5 = types.KeyboardButton("Управління замовленнями")
     item6 = types.KeyboardButton("Пошук по ТТН")
-    keyboard_schedule.add(item1, item2, item3, item4, item5, item6)
+    item7 = types.KeyboardButton("Статистика за місяць")
+    keyboard_schedule.add(item1, item2, item3, item4, item5, item6, item7)
 
     conn = connection_func()
     query = f"select id from admins where id = {message.from_user.id}"
@@ -1370,6 +1375,138 @@ def search_by_ttn_handler(message):
 # Конец
 '''
 Пошук по ттн
+'''
+# Конец
+
+
+# Начало
+'''
+Статистика за місяць
+'''
+
+
+# Начало
+
+
+@bot.message_handler(func=lambda message: message.text == 'Статистика за місяць')
+def monthly_statistics(message):
+    conn = connection_func()
+    cursor = conn.cursor()
+    mouths_dict = {1: "Січень", 2: "Лютий", 3: "Березень", 4: "Квітень", 5: "Травень", 6: "Червень", 7: "Липень",
+                   8: "Серпень", 9: "Вересень", 10: "Жовтень", 11: "Листопад", 12: "Грудень"}
+    message_to_send = ''
+    try:
+        cursor.execute(f"select MONTH(now());")
+        mouth = cursor.fetchone()
+        mouth_number = mouth[0]
+        message_to_send += mouths_dict[mouth_number]
+
+        cursor.execute(f"select DATE_FORMAT(now(), '%d.%m.%Y');")
+        date = cursor.fetchone()
+        date = date[0]
+        message_to_send += f" {date} (СТАТИСТИКА)\n"
+
+        cursor.execute(f"select count(*) from orders where EXTRACT( MONTH FROM date) = EXTRACT( MONTH FROM now());")
+        number_of_orders = cursor.fetchone()
+        number_of_orders = number_of_orders[0]
+
+        message_to_send += f"Замовлень - {number_of_orders}\n"
+
+
+        cursor.execute(f"select DAYOFMONTH(now());")
+        now_day = cursor.fetchone()
+        now_day = now_day[0]
+        message_to_send += f"Середня кількість замовлень - {number_of_orders / now_day:.1f}\n"
+
+        cursor.execute(f"SELECT SUM(price) FROM `orders` where EXTRACT( MONTH FROM date) = EXTRACT( MONTH FROM now());")
+        sum_price = cursor.fetchone()
+        sum_price = sum_price[0]
+        message_to_send += f"\nПрибуток - {sum_price} грн"
+        bot.send_message(message.chat.id, message_to_send)
+
+        '''Диаграмма Платформы продажи'''
+        top_platforms_diagram(message)
+
+        '''Диаграмма Топ 7 товаров'''
+        top_7_product_diagram(message)
+
+
+
+    except Error as e:
+        logger.debug(f"{e}")
+
+
+def top_platforms_diagram(message):
+    conn = connection_func()
+    cursor = conn.cursor()
+    platform_dict = {'instagram': 0, 'olx': 0, 'site': 0, 'izi': 0, 'dropshipping': 0, 'other': 0}
+    platform_dict_string = ''
+    for el in platform_dict:
+        cursor.execute(f"select count(*) from orders "
+                       f"where EXTRACT( MONTH FROM date) = EXTRACT( MONTH FROM now()) "
+                       f"GROUP by platform "
+                       f"having platform = '{el}';")
+        cout = cursor.fetchone()
+        if cout is None:
+            cout = 0
+        else:
+            cout = cout[0]
+        platform_dict[el] = cout
+        platform_dict_string += f"{el} - {cout} замовлень\n"
+    conn.close()
+    cursor.close()
+    rcParams["figure.figsize"] = 10, 4
+    x = list(platform_dict.values())
+    y = list(platform_dict.keys())
+    sr = pd.Series(x, index=y)
+    sr.plot(kind="barh", color="#33F7FF")
+    plt.savefig('top_platform.png')
+    plt.gcf().clear()
+
+    top_platform_photo = open('top_platform.png', 'rb')
+    bot.send_photo(message.chat.id, top_platform_photo, caption=platform_dict_string)
+
+
+def top_7_product_diagram(message):
+    conn = connection_func()
+    cursor = conn.cursor()
+    cursor.execute(f"select category_id, product_id, count(*) as count "
+                   f"from order_products "
+                   f"where order_id > (select id from orders where EXTRACT( MONTH FROM date) = EXTRACT( MONTH FROM now()) order by id limit 1)"
+                   f"group by product_id "
+                   f"order by count desc "
+                   f"limit 7;")
+    data_orders = cursor.fetchall()
+    list_top = []
+    list_count = []
+    for el in data_orders:
+        name_product = "("
+        cursor.execute(f"select name, title from categories where id = {el[0]}")
+        category = cursor.fetchone()
+        category_title = category[1]
+        category = category[0]
+        name_product += category
+        name_product += ')\n'
+
+        cursor.execute(f"select name from {category_title}_all where id_{category_title} = {el[1]}")
+        title = cursor.fetchone()
+        title = title[0]
+        name_product += title
+        list_top.append(name_product)
+        list_count.append(el[2])
+    conn.close()
+    cursor.close()
+    top_product = pd.Series(list_count, index=list_top)
+    top_product.plot(kind="barh", color="#33F7FF")
+    plt.savefig('top_7_product.png')
+
+    top_7_product_photo = open('top_7_product.png', 'rb')
+    bot.send_photo(message.chat.id, top_7_product_photo, caption=f"Топ 7 товарів")
+
+
+# Конец
+'''
+Статистика за місяць
 '''
 # Конец
 
