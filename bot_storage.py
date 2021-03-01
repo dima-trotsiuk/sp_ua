@@ -1396,39 +1396,44 @@ def monthly_statistics(message):
                    8: "Серпень", 9: "Вересень", 10: "Жовтень", 11: "Листопад", 12: "Грудень"}
     message_to_send = ''
     try:
-        cursor.execute(f"select MONTH(now());")
-        mouth = cursor.fetchone()
-        mouth_number = mouth[0]
-        message_to_send += mouths_dict[mouth_number]
-
-        cursor.execute(f"select DATE_FORMAT(now(), '%d.%m.%Y');")
-        date = cursor.fetchone()
-        date = date[0]
-        message_to_send += f" {date} (СТАТИСТИКА)\n"
-
         cursor.execute(f"select count(*) from orders where EXTRACT( MONTH FROM date) = EXTRACT( MONTH FROM now());")
         number_of_orders = cursor.fetchone()
         number_of_orders = number_of_orders[0]
+        if number_of_orders == 0:
+            bot.send_message(message.chat.id, f"Дядько, заказів ще немає")
+        else:
+            cursor.execute(f"select MONTH(now());")
+            mouth = cursor.fetchone()
+            mouth_number = mouth[0]
+            message_to_send += mouths_dict[mouth_number]
 
-        message_to_send += f"Замовлень - {number_of_orders}\n"
+            cursor.execute(f"select DATE_FORMAT(now(), '%d.%m.%Y');")
+            date = cursor.fetchone()
+            date = date[0]
+            message_to_send += f" {date} (СТАТИСТИКА)\n"
 
 
-        cursor.execute(f"select DAYOFMONTH(now());")
-        now_day = cursor.fetchone()
-        now_day = now_day[0]
-        message_to_send += f"Середня кількість замовлень - {number_of_orders / now_day:.1f}\n"
+            logger.debug(number_of_orders)
 
-        cursor.execute(f"SELECT SUM(price) FROM `orders` where EXTRACT( MONTH FROM date) = EXTRACT( MONTH FROM now());")
-        sum_price = cursor.fetchone()
-        sum_price = sum_price[0]
-        message_to_send += f"\nПрибуток - {sum_price} грн"
-        bot.send_message(message.chat.id, message_to_send)
+            message_to_send += f"Замовлень - {number_of_orders}\n"
 
-        '''Диаграмма Платформы продажи'''
-        top_platforms_diagram(message)
 
-        '''Диаграмма Топ 7 товаров'''
-        top_7_product_diagram(message)
+            cursor.execute(f"select DAYOFMONTH(now());")
+            now_day = cursor.fetchone()
+            now_day = now_day[0]
+            message_to_send += f"Середня кількість замовлень - {number_of_orders / now_day:.1f}\n"
+
+            cursor.execute(f"SELECT SUM(price) FROM `orders` where EXTRACT( MONTH FROM date) = EXTRACT( MONTH FROM now());")
+            sum_price = cursor.fetchone()
+            sum_price = sum_price[0]
+            message_to_send += f"\nПрибуток - {sum_price} грн"
+            bot.send_message(message.chat.id, message_to_send)
+
+            '''Диаграмма Платформы продажи'''
+            top_platforms_diagram(message)
+
+            '''Диаграмма Топ 7 товаров'''
+            top_7_product_diagram(message)
 
 
 
@@ -1472,11 +1477,12 @@ def top_7_product_diagram(message):
     cursor = conn.cursor()
     cursor.execute(f"select category_id, product_id, count(*) as count "
                    f"from order_products "
-                   f"where order_id > (select id from orders where EXTRACT( MONTH FROM date) = EXTRACT( MONTH FROM now()) order by id limit 1)"
+                   f"where order_id >= (select id from orders where EXTRACT( MONTH FROM date) = EXTRACT( MONTH FROM now()) order by id limit 1)"
                    f"group by product_id "
                    f"order by count desc "
                    f"limit 7;")
     data_orders = cursor.fetchall()
+    logger.debug(data_orders)
     list_top = []
     list_count = []
     for el in data_orders:
