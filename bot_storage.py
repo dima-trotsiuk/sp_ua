@@ -393,7 +393,6 @@ def new_product(message):
     category = info[0]
     global title
     title = message.text
-    logger.debug(title)
 
     if category == 'stickers':
         sent = bot.send_message(message.chat.id, f"Стікерів в паці?")
@@ -468,20 +467,6 @@ def plus(call):
         query = f"update {category}_{who_change_storage} set quantity = quantity + {plus_value} where id = {id_arr}"
         cursor.execute(query)
         conn.commit()
-        # оновлення товару в stickers_all
-        if category == 'stickers':
-            query = "update stickers_all set " \
-                    "quantity = ((select quantity div quantity_in_pack from stickers_dima where id = stickers_all.id_stickers) + " \
-                    "(select quantity div quantity_in_pack from stickers_vlad where id = stickers_all.id_stickers)) " \
-                    f"where id_stickers = {id_arr};"
-            cursor.execute(query)
-            conn.commit()
-        else:
-            query = f"update {category}_all set quantity = ((select quantity from {category}_dima where id = {category}_all.id_{category}) + " \
-                    f"(select quantity from {category}_vlad where id = {category}_all.id_{category}))" \
-                    f"where id_{category} = {id_arr};"
-            cursor.execute(query)
-            conn.commit()
 
         spam_check(call)
         change_menu_call(call)
@@ -516,24 +501,10 @@ def minus(call):
             query = f"update {category}_{who_change_storage} set quantity = quantity - {plus_value} where id = {id_arr}"
             cursor.execute(query)
             conn.commit()
-            # оновлення товару в stickers_all
-            if category == 'stickers':
-                query = "update stickers_all set " \
-                        "quantity = ((select quantity div quantity_in_pack from stickers_dima where id = stickers_all.id_stickers) + " \
-                        "(select quantity div quantity_in_pack from stickers_vlad where id = stickers_all.id_stickers)) " \
-                        f"where id_stickers = {id_arr};"
-                cursor.execute(query)
-                conn.commit()
-            else:
-                query = f"update {category}_all set quantity = ((select quantity from {category}_dima where id = {category}_all.id_{category}) + " \
-                        f"(select quantity from {category}_vlad where id = {category}_all.id_{category}))" \
-                        f"where id_{category} = {id_arr};"
-                cursor.execute(query)
-                conn.commit()
             spam_check(call)
             change_menu_call(call)
     except Error as e:
-        logger.error(f"Помилка в plus: {e}")
+        logger.error(f"Помилка в minus: {e}")
         bot.send_message(call.message.chat.id, "Помилка в запросі в БД")
     finally:
         conn.close()
@@ -580,20 +551,7 @@ def new_quantity(message):
             query = f"update {category}_{who_change_storage} set quantity = {message.text} where id = {id}"
             cursor.execute(query)
             conn.commit()
-            # оновлення товару в stickers_all
-            if category == 'stickers':
-                query = "update stickers_all set " \
-                        "quantity = ((select quantity div quantity_in_pack from stickers_dima where id = stickers_all.id_stickers) + " \
-                        "(select quantity div quantity_in_pack from stickers_vlad where id = stickers_all.id_stickers)) " \
-                        f"where id_stickers = {id};"
-                cursor.execute(query)
-                conn.commit()
-            else:
-                query = f"update {category}_all set quantity = ((select quantity from {category}_dima where id = {category}_all.id_{category}) + " \
-                        f"(select quantity from {category}_vlad where id = {category}_all.id_{category}))" \
-                        f"where id_{category} = {id};"
-                cursor.execute(query)
-                conn.commit()
+
             bot.send_message(message.chat.id, "Зміни збережено")
     except:
         sent = bot.send_message(message.chat.id, f"Введи число, бомж")
@@ -622,6 +580,34 @@ Full склад
 
 @bot.message_handler(func=lambda message: message.text == 'Full склад')
 def full_storage(message):
+    conn = connection_func()
+    cursor = conn.cursor()
+    try:
+
+        cursor.execute(f"select title from categories;")
+        categories = cursor.fetchall()
+        for cat in categories:
+            category = cat[0]
+            if category == 'stickers':
+                query = "update stickers_all set " \
+                        "quantity = ((select quantity div quantity_in_pack from stickers_dima where id = stickers_all.id_stickers) + " \
+                        "(select quantity div quantity_in_pack from stickers_vlad where id = stickers_all.id_stickers)) "
+
+                cursor.execute(query)
+                conn.commit()
+            else:
+                query = f"update {category}_all set quantity = ((select quantity from {category}_dima where id = {category}_all.id_{category}) + " \
+                        f"(select quantity from {category}_vlad where id = {category}_all.id_{category}));"
+                cursor.execute(query)
+                conn.commit()
+
+    except Error as e:
+        logger.error(f"Помилка в full_storage: {e}")
+        bot.send_message(call.message.chat.id, "Помилка в запросі в БД")
+    finally:
+        conn.close()
+        cursor.close()
+
     conn = connection_func()
     cursor = conn.cursor()
     try:
@@ -677,8 +663,9 @@ def menu_orders(message):
     add_order = types.InlineKeyboardButton("Додати", callback_data="add_order")
     view_orders = types.InlineKeyboardButton("Перегланути", callback_data="view_orders")
     send_orders = types.InlineKeyboardButton("Відправити", callback_data="send_orders")
+    edit_orders = types.InlineKeyboardButton("Редагувати", callback_data="edit_orders")
     delete_order = types.InlineKeyboardButton("Видалити", callback_data="delete_order")
-    menu_orders_keyboard.add(add_order, view_orders, send_orders, delete_order)
+    menu_orders_keyboard.add(add_order, view_orders, send_orders, edit_orders, delete_order)
     bot.send_message(message.chat.id, 'Меню управління замовленнями:', reply_markup=menu_orders_keyboard)
 
 
@@ -690,6 +677,8 @@ def menu_orders_call(call):
         view_orders(call)
     elif call.data == "send_orders":
         send_orders(call)
+    elif call.data == "edit_orders":
+        edit_orders(call)
     elif call.data == "delete_order":
         delete_order(call)
     spam_check(call)
@@ -725,6 +714,7 @@ def platform_order_bd(platform):
     try:
         cursor.execute(f'insert into orders set platform = "{platform}";')
         conn.commit()
+
     except Error as e:
         logger.error(f"Помилка в platform_order_bd {e}")
     finally:
@@ -733,33 +723,37 @@ def platform_order_bd(platform):
 
 
 def get_ttn(message):
+
     ttn = bot.send_message(message.chat.id, "ТТН??")
     bot.register_next_step_handler(ttn, get_ttn_call)
 
 
 def get_ttn_call(message):
-    conn = connection_func()
-    cursor = conn.cursor()
     try:
-        conn.close()
-        cursor.close()
+
         last_id = last_id_orders()
 
         conn = connection_func()
         cursor = conn.cursor()
         cursor.execute(f'update orders set ttn = "{message.text}" where id = {last_id};')
         conn.commit()
+        cursor.execute(f"update admins set order_id = {last_id} where id = {message.chat.id}")
+        conn.commit()
 
-        select_admin = types.InlineKeyboardMarkup(row_width=3)
-        dima = types.InlineKeyboardButton("Дімона", callback_data="admin_dima")
-        vlad = types.InlineKeyboardButton("Владоса", callback_data="admin_vlad")
-        select_admin.add(dima, vlad)
-        bot.send_message(message.from_user.id, 'З чийого складу пиздимо товар?))', reply_markup=select_admin)
-    except Error as e:
-        logger.error(f"Помилка в platform_order_bd {e}")
-    finally:
+        who_change_storage(message)
+
         conn.close()
         cursor.close()
+    except Error as e:
+        logger.error(f"Помилка в get_ttn_call {e}")
+
+
+def who_change_storage(message):
+    select_admin = types.InlineKeyboardMarkup(row_width=3)
+    dima = types.InlineKeyboardButton("Дімона", callback_data="admin_dima")
+    vlad = types.InlineKeyboardButton("Владоса", callback_data="admin_vlad")
+    select_admin.add(dima, vlad)
+    bot.send_message(message.from_user.id, 'З чийого складу пиздимо товар?))', reply_markup=select_admin)
 
 
 @bot.callback_query_handler(func=lambda call: "admin" in call.data)
@@ -829,9 +823,12 @@ def select_product(message):
         category = cursor.fetchone()
         category = category[0]
 
+        cursor.execute(f"select who_change from admins where id = {message.chat.id}")
+        admin_name = cursor.fetchone()
+        admin_name = admin_name[0]
+
         conn.close()
         cursor.close()
-        admin_name = admin_name_last_order()
 
         conn = connection_func()
         cursor = conn.cursor()
@@ -1097,7 +1094,7 @@ def add_to_order(call):
         cursor.execute(f"insert into order_products set "
                        f"category_id = (select category_id from admins where id = {call.message.chat.id}),"
                        f"product_id = (select item_id from admins where id = {call.message.chat.id}),"
-                       f"order_id = (select id from orders order by id desc limit 1),"
+                       f"order_id = (select order_id from admins where id = {call.message.chat.id}),"
                        f"quantity = (select quantity from admins where id = {call.message.chat.id});")
         conn.commit()
 
@@ -1167,22 +1164,29 @@ def select_done_call(call):
 def set_a_price(message):
     conn = connection_func()
     cursor = conn.cursor()
+
     try:
-        int(message.text)
-        price = int(message.text)
-        if price >= 0:
-            last_id = last_id_orders()
-            cursor.execute(f'update orders set price = {message.text} where id = {last_id};')
-            conn.commit()
-            bot.send_message(message.chat.id, "Додано до бази даних🤯")
+        cursor.execute(f"select order_id from admins where id = {message.chat.id}")
+        id = cursor.fetchone()
+        id = id[0]
+        if message.text.isdigit():
+            price = int(message.text)
+            if price >= 0:
+                last_id = last_id_orders()
+                cursor.execute(f'update orders set price = {message.text} where id = {last_id};')
+                conn.commit()
+                bot.send_message(message.chat.id, "Додано до бази даних🤯")
+                search_by_ttn_handler(message, by_id=id)
+            else:
+                conn.close()
+                cursor.close()
+                sent = bot.send_message(message.chat.id, "Піздиш гроші ПАДЛА?? Напиши нормально:")
+                bot.register_next_step_handler(sent, set_a_price)
         else:
-            conn.close()
-            cursor.close()
-            sent = bot.send_message(message.chat.id, "Піздиш гроші ПАДЛА?? Напиши нормально:")
+            sent = bot.send_message(message.chat.id, "Цифру пж:")
             bot.register_next_step_handler(sent, set_a_price)
-    except:
-        conn.close()
-        cursor.close()
+    except Error as e:
+        logger.error(f"Помилка в set_a_price: {e}")
         sent = bot.send_message(message.chat.id, "Цифру пж:")
         bot.register_next_step_handler(sent, set_a_price)
     finally:
@@ -1237,7 +1241,6 @@ def view_orders(call):
 
                     cursor.execute(f"select name from {categories}_{admin_name} where id = {product_id}")
                     title = cursor.fetchone()
-                    logger.debug(title)
                     title = title[0]
 
                     send += f"{quantity} {title} ({categories})\n"
@@ -1267,6 +1270,80 @@ def send_orders(call):
 @bot.callback_query_handler(func=lambda call: "close" in call.data)
 def close_call(call):
     spam_check(call)
+
+
+'''edit_orders'''
+
+
+def edit_orders(call):
+    sent = bot.send_message(call.message.chat.id, f"Номер замовлення?")
+    bot.register_next_step_handler(sent, edit_orders_by_number)
+
+
+def edit_orders_by_number(message):
+    search_by_ttn_handler(message, by_id=message.text)
+    conn = connection_func()
+    cursor = conn.cursor()
+    cursor.execute(f"select * from orders where id = {message.text}")
+    info_by_order = cursor.fetchone()
+
+    if not info_by_order is None:
+        keyboard_schedule = types.InlineKeyboardMarkup()
+        item1 = types.InlineKeyboardButton("Ціну 💸", callback_data=f"edit_price_{message.text}")
+        item2 = types.InlineKeyboardButton("Товари ✉", callback_data=f"edit_goods_{message.text}")
+        keyboard_schedule.add(item1, item2)
+
+        bot.send_message(message.from_user.id,
+                         "Що треба змінити? 😊",
+                         reply_markup=keyboard_schedule)
+    cursor.execute(f"update admins set order_id = {message.text} where id = {message.chat.id}")
+    conn.commit()
+    conn.close()
+    cursor.close()
+
+
+@bot.callback_query_handler(func=lambda call: "edit" in call.data)
+def edit_orders_by_number_call(call):
+    id_order = call.data.split("_")
+    id = id_order[2]
+
+    conn = connection_func()
+    cursor = conn.cursor()
+    cursor.execute(f"update admins set order_id = {id} where id = {call.message.chat.id}")
+    conn.commit()
+    conn.close()
+    cursor.close()
+
+    if "edit_price" in call.data:
+        sent = bot.send_message(call.message.chat.id, f"Нова ціна?")
+        bot.register_next_step_handler(sent, new_price, id)
+    elif "edit_goods" in call.data:
+        edit_goods(call, id)
+
+    spam_check(call)
+
+
+def new_price(message, id):
+    conn = connection_func()
+    cursor = conn.cursor()
+    cursor.execute(f"update orders set price = {message.text} where id = {id}")
+    conn.commit()
+    conn.close()
+    cursor.close()
+    search_by_ttn_handler(message, by_id=id)
+
+
+def edit_goods(call, id):
+    bot.send_message(call.message.chat.id, f"Всі товари в цьому замовленні будуть видалені. Потрібно додати нові."
+                                           f"Новий товар також автоматично відніметься зі склада")
+    conn = connection_func()
+    cursor = conn.cursor()
+    cursor.execute(f"delete from order_products where order_id = "
+                   f"(select order_id from admins where id = {call.message.chat.id})")
+    conn.commit()
+    conn.close()
+    cursor.close()
+    change_choose_cat_orders(call)
 
 
 '''delete_order'''
@@ -1323,17 +1400,20 @@ def search_by_ttn(message):
     bot.register_next_step_handler(sent, search_by_ttn_handler)
 
 
-def search_by_ttn_handler(message):
-    ttn = message.text
+def search_by_ttn_handler(message, by_id=0):
     conn = connection_func()
     cursor = conn.cursor(buffered=True)
-
     send = ''
-    cursor.execute(f"select admin_name, id, platform, price, date from orders where ttn = '{ttn}'")
+    if by_id:
+        id = by_id
+        cursor.execute(f"select admin_name, id, platform, price, date, ttn from orders where id = '{id}'")
+    else:
+        ttn = message.text
+        cursor.execute(f"select admin_name, id, platform, price, date, ttn from orders where ttn = '{ttn}'")
 
     info = cursor.fetchone()  # ('dima', 957, 'instagram', 100, datetime.datetime(2021, 2, 5, 11, 42, 44))
     if not info:
-        bot.send_message(message.chat.id, f"Такого ТТН немає😳")
+        bot.send_message(message.chat.id, f"Такого замовлення немає😳")
     else:
 
         admin_name = info[0]
@@ -1341,6 +1421,7 @@ def search_by_ttn_handler(message):
         platform = info[2]
         price = info[3]
         date = info[4]
+        ttn = info[5]
         send += f"{date}\n"
         send += f"Замовлення №{id} ({platform})\nТТН: {ttn}\n"
         try:
@@ -1412,18 +1493,15 @@ def monthly_statistics(message):
             date = date[0]
             message_to_send += f" {date} (СТАТИСТИКА)\n"
 
-
-            logger.debug(number_of_orders)
-
             message_to_send += f"Замовлень - {number_of_orders}\n"
-
 
             cursor.execute(f"select DAYOFMONTH(now());")
             now_day = cursor.fetchone()
             now_day = now_day[0]
             message_to_send += f"Середня кількість замовлень - {number_of_orders / now_day:.1f}\n"
 
-            cursor.execute(f"SELECT SUM(price) FROM `orders` where EXTRACT( MONTH FROM date) = EXTRACT( MONTH FROM now());")
+            cursor.execute(
+                f"SELECT SUM(price) FROM `orders` where EXTRACT( MONTH FROM date) = EXTRACT( MONTH FROM now());")
             sum_price = cursor.fetchone()
             sum_price = sum_price[0]
             message_to_send += f"\nПрибуток - {sum_price} грн"
@@ -1435,10 +1513,8 @@ def monthly_statistics(message):
             '''Диаграмма Топ 7 товаров'''
             top_7_product_diagram(message)
 
-
-
     except Error as e:
-        logger.debug(f"{e}")
+        logger.error(f"{e}")
 
 
 def top_platforms_diagram(message):
@@ -1482,7 +1558,6 @@ def top_7_product_diagram(message):
                    f"order by count desc "
                    f"limit 7;")
     data_orders = cursor.fetchall()
-    logger.debug(data_orders)
     list_top = []
     list_count = []
     for el in data_orders:
